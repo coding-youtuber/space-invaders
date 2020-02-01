@@ -1,9 +1,6 @@
 const testModules = require('./test-module');
 require('../css/app.css');
 
-var canvas = document.getElementById("game-layer");
-var context = canvas.getContext("2d");
-
 function Player(x, y) {
   this.x = x;
   this.y = y;
@@ -12,15 +9,8 @@ function Player(x, y) {
   this.direction = -1;
 }
 
-Player.prototype.draw = function() {
-  context.fillStyle = "blue";
-  context.fillRect(this.x, this.y, this.width, this.height);
-}
-
 Player.prototype.update = function() {
-  this.y = this.y + this.direction;
-
-  if(this.y <= 0 || this.y + this.height >= canvas.height) {
+  if(this.y <= 0 || this.y + this.height >= game.gameFieldHeight()) {
     this.direction *= -1;
   }
 }
@@ -33,42 +23,108 @@ function Enemy(x, y) {
   this.direction = -1;
 }
 
-Enemy.prototype.draw = function() {
-  context.fillStyle = "red";
-  context.fillRect(this.x, this.y, this.width, this.height);
-}
-
 Enemy.prototype.update = function() {
-  this.y = this.y + this.direction;
-
-  if(this.y <= 0 || this.y + this.height >= canvas.height) {
+  if(this.y <= 0 || this.y + this.height >= game.gameFieldHeight()) {
     this.direction *= -1;
   }
 }
 
+var renderer = (function () {
 
-var player = new Player(100, 175);
-var enemy1 = new Enemy(20, 25);
-var enemy2 = new Enemy(180, 25);
-var enemy3 = new Enemy(340, 25);
+  function _drawEnemy(context, enemy) {
+    context.fillStyle = "red";
+    context.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+  }
 
-function frameUpdate() {
-  context.fillStyle = "gray";
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  function _drawPlayer(context, player) {
+    context.fillStyle = "blue";
+    context.fillRect(player.x, player.y, player.width, player.height);
+  }
 
-  player.update();
-  player.draw();
+  function _render() {
+    var canvas = document.getElementById("game-layer");
+    var context = canvas.getContext("2d");
 
-  enemy1.update();
-  enemy1.draw();
+    context.fillStyle = "gray";
+    context.fillRect(0, 0, canvas.width, canvas.height);
 
-  enemy2.update();
-  enemy2.draw();
+    var i,
+    entity,
+    entities = game.entities();
 
-  enemy3.update();
-  enemy3.draw();
+    for (var i = 0; i < entities.length; i++) {
+      entity = entities[i];
 
-  window.requestAnimationFrame(frameUpdate);
-}
+      if(entity instanceof Enemy) {
+        _drawEnemy(context, entity);
+      }
+      else if(entity instanceof Player) {
+        _drawPlayer(context, entity);
+      }
+    }
+  }
 
-frameUpdate();
+  return {
+    render: _render
+  };
+
+})();
+
+var physics = (function () {
+  function _update() {
+    var i,
+    entities = game.entities();
+
+    for (var i = 0; i < entities.length; i++) {
+      entities[i].y += entities[i].direction;
+    }
+  }
+
+  return {
+    update: _update
+  };
+
+})();
+
+var game = (function () {
+  var _gameFieldHeight = 600;
+  var _entities = [];
+
+  function _start() {
+    _entities.push(new Player(100, 175));
+    _entities.push(new Enemy(20, 25));
+    _entities.push(new Enemy(180, 25));
+    _entities.push(new Enemy(340, 25));
+
+    window.requestAnimationFrame(this.update.bind(this));
+  }
+
+  function _update() {
+    physics.update();
+
+    var i;
+
+    for (var i = 0; i < _entities.length; i++) {
+      _entities[i].update();
+    }
+
+    renderer.render();
+
+    window.requestAnimationFrame(this.update.bind(this));
+
+  }
+
+  return {
+    start: _start,
+    update: _update,
+    entities: function () {
+      return _entities;
+    },
+    gameFieldHeight: function () {
+      return _gameFieldHeight;
+    }
+  };
+
+})();
+
+game.start();
