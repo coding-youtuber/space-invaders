@@ -21,10 +21,10 @@ export var game = (function () {
     this.addEntity(
       new Player( new Vector2d(100, 175),
       25,
-      new Vector2d(0, -10)
+      new Vector2d(0, 0)
     ));
 
-    
+
     this.addEntity(
       new Enemy( new Vector2d(20, 25),
       20,
